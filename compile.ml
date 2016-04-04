@@ -199,6 +199,10 @@ Values:
 
     -> [ type tag ] : [ GC word ] : [ 4-byte varcount = N ] : [ 4-byte arity ] : [ 4-byte code ptr ] : [ N*4 bytes of data ]
 
+  0xXXXXXXX[x011] - Variable
+
+    -> [ type tag ] : [ GC word ] : [ 4-byte value ]
+
   A gc-word is initially all zeroes.  During GC, the LSB is used as the mark
   bit, and the rest of the word stores a forwarding address.
 
@@ -261,23 +265,20 @@ let rec acompile_step (s : cexpr) (si : int) (env : int envt) : instruction list
       let frees = freevars_e ids body in
       let bodylocs = List.mapi (fun i a -> (a, i + 1)) frees in
 
-      let varcount = count_vars body in
       let arglocs = List.mapi (fun i a -> (a, -1 * (i + 3))) ids in
 
       let name = gen_temp "closure" in
       (* Assume address of closure in EAX *)
-      let free_copies = List.map (fun (_, l) -> [
-        IMov(Reg(ECX), RegOffset(((l + 4) * 4) - 5, EAX));
-        IMov(RegOffset(l * (-4), EBP), Reg(ECX))
-      ]) bodylocs in
-      let free_setup = (IMov(Reg(EAX), RegOffset(8, EBP)))::(List.flatten free_copies) in
+      let free_copies = List.map (fun (_, l) ->
+        IPush(Sized(DWORD_PTR, RegOffset(((l + 4) * 4) - 5, EAX)))
+      ) bodylocs in
+      let free_setup = (IMov(Reg(EAX), RegOffset(8, EBP)))::free_copies in
       let body_env = (arglocs @ bodylocs) in
 
       let body_exprs = [
         ILabel(name);
         IPush(Reg(EBP));
         IMov(Reg(EBP), Reg(ESP));
-        ISub(Reg(ESP), Const((varcount + (List.length frees)) * 4));
       ] @
       free_setup @
       (acompile_expr body ((List.length frees) + 1) body_env) @
@@ -334,11 +335,11 @@ let rec acompile_step (s : cexpr) (si : int) (env : int envt) : instruction list
             IMov(Reg(EAX), RegOffset(11, EAX));
           ]
         | Add1 ->
-          prelude @ check_num @[
+          prelude @ check_num @ prelude @ [
             IAdd(Reg(EAX), Const(2))
           ]
         | Sub1 ->
-          prelude @ check_num @ [
+          prelude @ check_num @ prelude @ [
             IAdd(Reg(EAX), Const(-2))
           ]
         | IsNum ->
@@ -467,8 +468,10 @@ and acompile_expr (e : aexpr) (si : int) (env : int envt) : instruction list =
       let prelude = acompile_step e (si + 1) env in
       let postlude = acompile_expr body (si + 1) ((id, si)::env) in
       prelude @ [
-        IMov(RegOffset(-4 * si, EBP), Reg(EAX))
-      ] @ postlude
+        IPush(Reg(EAX));
+      ] @ postlude @ [
+        IAdd(Reg(ESP), Const(4))
+      ]
     | ACExpr(s) -> acompile_step s si env
 
 let rec find_one (l : 'a list) (elt : 'a) : bool =
@@ -526,8 +529,6 @@ let compile_to_string (prog : expr) =
       let anfed = (anf prog return_hole) in
       count := 0;
       let compiled_main = (acompile_expr anfed 1 []) in
-      let varcount = count_vars anfed in
-      let stackjump = 4 * varcount in
       let prelude = "
 section .text
 extern error
@@ -542,7 +543,6 @@ global our_code_starts_here" in
             IMov(Reg(ESI), RegOffset(4, ESP));
             IPush(Reg(EBP));
             IMov(Reg(EBP), Reg(ESP));
-            ISub(Reg(ESP), Const(stackjump));
             IMov(LabelContents("STACK_BOTTOM"), Reg(EBP))
           ] in
           let postlude = [
