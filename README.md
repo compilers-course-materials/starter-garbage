@@ -42,9 +42,9 @@ The memory model is extended to keep track of information needed in garbage coll
 - 0x7FFFFFF[1111] - False
 - 0xXXXXXXX[x001] - Pair
 
-  `[ tag ] : [ GC word ] : [ value ] : [ value ]`
+  `[ tag ][ GC word ][ value ][ value ]`
 
 - 0xXXXXXXX[x101] - Closure
 
-  `[ tag ] : [ GC word ] : [ varcount = N ] : [ arity ] : [ code ptr ] : [[ N*4 bytes of data ]] : [maybe padding]`
+  `[ tag ][ GC word ][ varcount = N ][ arity ][ code ptr ][[ N vars' data ]][ maybe padding ]`
 
