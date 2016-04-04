@@ -1,4 +1,4 @@
-# Garbage Snake
+# Garbage Snake...?
 
 ![A confused snake](https://drawception.com/pub/panels/2012/4-6/RXFXH6p2kY-12.png)
 
