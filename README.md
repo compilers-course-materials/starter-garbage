@@ -34,8 +34,10 @@ this assignment is elsewhere.
 
 ## Memory Model
 
-The memory model is extended to keep track of information needed in garbage collection:
 
+### Value Layout
+
+The value layout is extended to keep track of information needed in garbage collection:
 
 - `0xXXXXXXX[xxx0]` - Number
 - `0xFFFFFFF[1111]` - True
@@ -44,7 +46,24 @@ The memory model is extended to keep track of information needed in garbage coll
 
   `[ tag ][ GC word ][ value ][ value ]`
 
-- 0xXXXXXXX[x101] - Closure
+- `0xXXXXXXX[x101]` - Closure
 
   `[ tag ][ GC word ][ varcount = N ][ arity ][ code ptr ][[ N vars' data ]][ maybe padding ]`
 
+
+As before, pairs and closure are represented as tagged pointers.  On the heap,
+each heap-allocated value has _two_ additional words.  The first holds the same
+tag information as the value (so `001` for a pair and `101` for a closure).
+The second is detailed below, and is used for bookkeeping during garbage
+collection.
+
+### Checking for Memory Usage
+
+Before allocating a closure or a pair, the Garbage compiler checks that enough
+space is available on the heap.  The instructions for this are implemented in
+`reserve` in `compile.ml`.  If there is not enough room, the generated code
+calls the `try_gc` function in `main.c` with the information needed to start
+automatically reclaiming memory.
+
+You don't need to edit these instructions, but you do need to understand them,
+and how they correspond to the arguments to `try_gc`.

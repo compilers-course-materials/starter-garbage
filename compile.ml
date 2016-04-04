@@ -199,10 +199,6 @@ Values:
 
     -> [ type tag ] : [ GC word ] : [ 4-byte varcount = N ] : [ 4-byte arity ] : [ 4-byte code ptr ] : [ N*4 bytes of data ]
 
-  0xXXXXXXX[x011] - Variable
-
-    -> [ type tag ] : [ GC word ] : [ 4-byte value ]
-
   A gc-word is initially all zeroes.  During GC, the LSB is used as the mark
   bit, and the rest of the word stores a forwarding address.
 
