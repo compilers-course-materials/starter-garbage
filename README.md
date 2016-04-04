@@ -32,7 +32,7 @@ syntax.  Their implementation is provided for you.  At this point,
 understanding those features will be straightforward for you, so the focus in 
 this assignment is elsewhere.
 
-## Memory Model
+## Runtime and Memory Model
 
 
 ### Value Layout
@@ -64,9 +64,6 @@ space is available on the heap.  The instructions for this are implemented in
 `reserve` in `compile.ml`.  If there is not enough room, the generated code
 calls the `try_gc` function in `main.c` with the information needed to start
 automatically reclaiming memory.
-
-You don't need to edit these instructions, but you do need to understand them,
-and how they correspond to the arguments to `try_gc`.
 
 When the program detects that there isn't enough memory for the value it's
 trying to create, it:
@@ -104,5 +101,13 @@ To run the mark/compact algorithm, we require:
     traversing the stack we will consider the values between base pointers.
   - The end of the stack: This is known by our compiler, and always has the
     value `EBP + si`, where `si` is the current stack index.
+
+
+All of this has been set up for you, but you do need to understand it.  So
+study `try_gc` (which you'll make one minor edit to), the new variables in
+`main.c`, and the code in `compile.ml` that relates to allocating and storing
+values (especially the `reserve` function and the instructions it generates).
+
+## Managing Memory
 
 
