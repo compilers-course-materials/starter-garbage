@@ -37,10 +37,10 @@ this assignment is elsewhere.
 The memory model is extended to keep track of information needed in garbage collection:
 
 
-- 0xXXXXXXX[xxx0] - Number
-- 0xFFFFFFF[1111] - True
-- 0x7FFFFFF[1111] - False
-- 0xXXXXXXX[x001] - Pair
+- `0xXXXXXXX[xxx0]` - Number
+- `0xFFFFFFF[1111]` - True
+- `0x7FFFFFF[1111]` - False
+- `0xXXXXXXX[x001]` - Pair
 
   `[ tag ][ GC word ][ value ][ value ]`
 
