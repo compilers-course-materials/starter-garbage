@@ -112,7 +112,7 @@ values (especially the `reserve` function and the instructions it generates).
 Your work in this assignment is all in managing memory.  You do _not_ need to
 write any OCaml code for this assignment.  You will only need to edit one file
 for code—`gc.c`—and you will write tests in both `gctest.c` and `test.ml`.
-Funadmentally, you will implement a mark/compact algorithm that reclaims space
+Fundamentally, you will implement a mark/compact algorithm that reclaims space
 by rearranging memory.
 
 ### Mark/Compact
