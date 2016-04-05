@@ -118,6 +118,8 @@ void TestMark(CuTest* tc) {
 
   free(heap);
   free(expectHeap);
+  free(expectHeap2);
+  free(expectHeap3);
 }
 
 CuSuite* CuGetSuite(void)

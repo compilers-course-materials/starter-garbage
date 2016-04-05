@@ -107,11 +107,6 @@ study `try_gc` (which you'll make one minor edit to), the new variables in
 `main.c`, and the code in `compile.ml` that relates to allocating and storing
 values (especially the `reserve` function and the instructions it generates).
 
-We discuss the three phases in more detail next.
-
-#### Mark
-
-
 
 ## Managing Memory
 
@@ -141,10 +136,86 @@ The end result is a heap that stores only the data reachable from the heap, in
 as little space as possible (given our heap layout).  Allocation can proceed
 from the end of the compacted space by resetting `ESI` to the final address.
 
-Here's a running example.  The `HEAP_SIZE` is 20 (so 80 total bytes), and we
-consider the snapshot in time where the `f` function has just been called.
+We discuss the three phases in more detail next.
 
-![An example](https://github.swarthmore.edu/raw/cs75-s16/starter-garbage/master/notes_page001.svg?token=AAAAF_W4bPscwxLUW5p9eInL4t1YWGqBks5XDFZLwA%3D%3D)
+Here's a [running
+example](https://github.swarthmore.edu/cs75-s16/starter-garbage/blob/master/notes_page001.svg).
+The `HEAP_SIZE` is 20 (so 80 total bytes), and we consider the snapshot in time
+where the `f` function has just been called.
+
+Three pairs and a closure have been allocated so far – one pair stored in `x`,
+and the other two created in the `begin` expression but unused.  The pairs are
+at offsets `0`, `16`, and `32` from the front of the heap, and the closure is
+at index `64`.  Each of these values takes up two words more of space than it
+did in the last lab; one for the tag and one for the (initially zeroed-out) GC
+word.  Overall, there are only two bytes remaining, and `ESI` currently points
+to `72`.
+
+The next step would be to allocate space for the pair containing `x` and `y` in
+the body of `f`.  However, that would require 4 bytes, which is over the limit.
+This is why the garbage collector is called.
+
+#### Mark
+
+In the first phase, we take the initial heap and stack, and set all the GC
+words of live data to 1.  The live data is all the data reachable from
+references on the stack, excluding return pointers and base pointers (which
+don't represent data on the heap).  We can do this by looping over the words on
+the stack, and doing a depth-first traversal of the heap from any reference
+values (pairs or closures) that we find.
+
+The `stack_top` and `first_frame` arguments to `mark` point to the top of the
+stack, which contains a previous base pointer value, followed by a return
+pointer.  If `f` had local variables, then they would cause `stack_top` to
+point higher. `stack_bottom` points at the highest (in terms of number) word on
+the stack.  Thus, we want to loop from `stack_top` to `stack_bottom`,
+traversing the heap from each reference we find.  We also want to _skip_ the
+words corresponding to `first_frame` and the word after it, and each pair of
+base pointer and return pointer from there down (if there are multiple function
+calls active).
+
+Along the way, we also keep track of the highest start address of a live value
+to use later, which in this case is 64, the address of the closure.
+
+#### Forward
+
+To set up the forwarding of values, we traverse the heap starting from the
+beginning (`heap_start`).  We keep track of two pointers, one to the next space
+to use for the eventual location of compacted data, and one to the
+currently-inspected value.
+
+For each value, we check if it's live, and if it is, set its forwarding address
+to the current compacted data pointer and increase the compacted pointer by the
+size of the value.  If it is not live, we simply continue onto the next value
+– we can use the tag and other metadata to compute the size of each value to
+determine which address to inspect next.  The traversal stops when we reach the
+`max_address` stored above (so we don't accidentally treat the undefined data
+in spaces 72-80 as real data).
+
+Then we traverse all of the stack and heap values again to update any internal
+pointers to use the new addresses.
+
+In this case, the closure is scheduled to move from its current location of 64
+to a new location of 16.  So its forwarding pointer is set, and both references
+to it on the stack are also updated.  The first tuple is already in its final
+position (starting at 0), so while its forwarding pointer is set, references to
+it do not change.
+
+#### Compact
+
+Finally, we travers the heap, starting from the beginning, and copy the values
+into their forwarding positions.  Since all the internal pointers and stack
+pointers have been updated already, once the values are copied, the heap
+becomes consistent again.  We track the last compacted address so that we can
+return the first free address—in this case 40—which will be returned and used
+as the new start of allocation.  While doing so, we also zero out all of the GC
+words, so that the next time we mark the heap we have a fresh start.
+
+I also highly recommend that you walk the rest of the heap and set the words to
+some special value.  The given tests suggest overwriting each word with the
+value `0x0cab005e` – the “caboose” of the heap.  This will make it much
+easier when debugging to tell where the heap ends, and also stop a runaway
+algorithm from interpreting leftover heap data as live data accidentally.
 
 ### Testing
 
