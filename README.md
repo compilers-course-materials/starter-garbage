@@ -107,6 +107,12 @@ study `try_gc` (which you'll make one minor edit to), the new variables in
 `main.c`, and the code in `compile.ml` that relates to allocating and storing
 values (especially the `reserve` function and the instructions it generates).
 
+We discuss the three phases in more detail next.
+
+#### Mark
+
+
+
 ## Managing Memory
 
 Your work in this assignment is all in managing memory.  You do _not_ need to
@@ -135,6 +141,10 @@ The end result is a heap that stores only the data reachable from the heap, in
 as little space as possible (given our heap layout).  Allocation can proceed
 from the end of the compacted space by resetting `ESI` to the final address.
 
+Here's a running example.  The `HEAP_SIZE` is 20 (so 80 total bytes), and we
+consider the snapshot in time where the `f` function has just been called.
+
+![https://github.swarthmore.edu/raw/cs75-s16/starter-garbage/master/notes_page001.svg?token=AAAAF_W4bPscwxLUW5p9eInL4t1YWGqBks5XDFZLwA%3D%3D](an example)
 
 ### Testing
 
