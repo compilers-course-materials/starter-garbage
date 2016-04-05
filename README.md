@@ -110,4 +110,30 @@ values (especially the `reserve` function and the instructions it generates).
 
 ## Managing Memory
 
+Your work in this assignment is all in managing memory.  You do _not_ need to
+write any OCaml code for this assignment.  You will only need to edit one file
+for code—`gc.c`—and you will write tests in both `gctest.c` and `test.ml`.
+Funadmentally, you will implement a mark/compact algorithm that reclaims space
+by rearranging memory.
+
+### Mark/Compact
+
+The algorithm works in three phases:
+
+1. **Mark** – Starting from all the references on the stack, all of the
+reachable data on the heap is _marked_ as live.  Marking is done by setting the
+least-significant bit of the GC word to 1.
+2. **Forward** – For each live value on the heap, a new address is calculated
+and stored.  These addresses are calculated to compact the data into the front
+of the heap with no gaps.  The forwarded addresses, which are stored in the
+remainder of the GC word, are then used to update all the values on the stack
+and the heap to point to the new locations.  Note that this step does not yet
+move any data, just set up forwarding pointers.
+3. **Compact** – Each live value on the heap is copied to its forwarding
+location, and has its GC word zeroed out for future garbage collections.
+
+The end result is a heap that stores only the data reachable from the heap, in
+as little space as possible (given our heap layout).  Allocation can proceed
+from the end of the compacted space by resetting `ESI` to the final address.
+
 
