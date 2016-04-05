@@ -100,8 +100,7 @@ To run the mark/compact algorithm, we require:
     using the initial value of `EBP`.  This is a useful value, because when
     traversing the stack we will consider the values between base pointers.
   - The end of the stack: This is known by our compiler, and always has the
-    value `EBP + si`, where `si` is the current stack index.
-
+    value of `ESP` at the point of garbage collection.
 
 All of this has been set up for you, but you do need to understand it.  So
 study `try_gc` (which you'll make one minor edit to), the new variables in
@@ -135,5 +134,84 @@ location, and has its GC word zeroed out for future garbage collections.
 The end result is a heap that stores only the data reachable from the heap, in
 as little space as possible (given our heap layout).  Allocation can proceed
 from the end of the compacted space by resetting `ESI` to the final address.
+
+
+### Testing
+
+This lab has you write tests both of the language and of the underlying garbage
+collection algorithm.
+
+**Testing the Language** – This works mostly as before, except that there are
+a few additional forms for checking things relative to the garbage collector.
+The main program is parameterized over an integer argument that allows you to
+select the size of the heap in terms of (4-byte) words.  This is exposed
+through the testing library as well, so you can write:
+
+```
+tgc "gctest" 10 "(1, 2)" "(1, 2)"
+```
+
+and this will run the test with a heap size of 10.
+
+You can also test for specific errors, for example in the case that there will
+never be enough memory to fit the required data:
+
+```
+tgcerr "gctest" 10 "(1, (3, (4, 5)))" "Out of memory"
+```
+
+Finally, you can use `tvgc` to run a `tgc` test with `valgrind`, to improve
+errors on segfaults and check memory.
+
+**Testing The Collector** – You can write tests for the garbage collector
+implementation itself in `gctest.c`, and run them with:
+
+```
+> make gctest
+> ./gctest
+```
+
+This uses the [CuTest](http://cutest.sourceforge.net/) testing framework for C,
+augmented with a testing procedure for arrays.  You can read the given example
+to see how a test is set up:  You can add new tests by creating a function of
+the same shape as `TestMark`, and adding it with a call to `SUITE_ADD_TEST` at
+the bottom.
+
+The given test works by allocating arrays to represent the stack and heap, and
+calling `mark`, `forward`, and `compact` on them.  The results are checked by
+building separate arrays to compare against the heap as it is altered after
+each step, with the `CuAssertArrayEquals` function.  This function takes a test
+context (necessary boilerplate for the testing library), two arrays, and a
+length, and compares indices up to that length for equality.  Be aware that it
+only reports one mismatch in the output.
+
+Feel free to augment this function, or use the other testing functions in
+CuTest (see cutest-1.5/README.txt in the repo for the other functions) to test
+more.
+
+Note that the given test will fail until you implement some of mark, forward,
+and compact, as they don't change the heap at all in their initial stubbed-out
+versions.
+
+**Printing** – There's a helper, `print_heap`, defined for you in `gc.c` that
+takes an array and a number of elements to print, and prints them one per line
+like so:
+
+```
+  0/0x100df0: 0x5 (5)
+  1/0x100df4: 0x0 (0)
+  ...
+  23/0x100e4c: 0x4 (4)
+  24/0x100e50: 0xcab005e (212533342)
+```
+
+The first number is the 0-based index from the start of the array, and the
+second is the memory address.  After the colon is the value, in hex form and in
+decimal form (in parentheses).  This is a useful layout of information to have
+at a glance for interpreting the structure of the heap.
+
+While automated testing and a debugger are both invaluable, sometimes there's
+just no substitute for pretty-printing the heap after each phase in a
+complicated test.
 
 
