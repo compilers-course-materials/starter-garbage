@@ -144,7 +144,7 @@ from the end of the compacted space by resetting `ESI` to the final address.
 Here's a running example.  The `HEAP_SIZE` is 20 (so 80 total bytes), and we
 consider the snapshot in time where the `f` function has just been called.
 
-![https://github.swarthmore.edu/raw/cs75-s16/starter-garbage/master/notes_page001.svg?token=AAAAF_W4bPscwxLUW5p9eInL4t1YWGqBks5XDFZLwA%3D%3D](an example)
+![An example](https://github.swarthmore.edu/raw/cs75-s16/starter-garbage/master/notes_page001.svg?token=AAAAF_W4bPscwxLUW5p9eInL4t1YWGqBks5XDFZLwA%3D%3D)
 
 ### Testing
 
